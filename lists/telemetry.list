@@ -1,0 +1,10 @@
+# 包名|允许的手段|区域|风险|说明
+com.miui.analytics|net,disable,uninstall,restrict|all|low|MIUI Analytics 统计分析（核心遥测）
+com.miui.daemon|net,disable,restrict|all|low|MIUI 守护进程（采集系统性能与使用数据；system UID，网络拦截仅靠 hosts）
+com.miui.misightservice|net,disable,restrict|all|low|MiSight 系统事件上报
+com.miui.bugreport|net,disable,uninstall,restrict|all|low|服务与反馈 / 错误报告上传
+com.miui.klo.bugreport|net,disable,uninstall,restrict|all|low|KLO 崩溃日志上报
+com.xiaomi.xmsfkeeper|net,disable,uninstall,restrict|all|low|XMSF 保活组件
+com.miui.uireporter|net,disable,restrict|all|low|界面异常上报
+com.xiaomi.simactivate.service|net,disable|all|med|SIM 卡激活服务（上传 SIM/设备标识；禁用后小米账号相关功能受影响）
+com.miui.tsmclient|net,disable,uninstall|cn|med|小米智能卡（国行，NFC 公交/门卡）

@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Anximi 隐私模块</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <span class="logo" aria-hidden="true">◐</span>
+    <div>
+      <h1>Anximi</h1>
+      <p class="sub" id="sub">HyperOS 隐私模块</p>
+    </div>
+  </div>
+  <nav class="tabs" role="tablist">
+    <button class="tab active" data-tab="overview">概览</button>
+    <button class="tab" data-tab="cats">分类</button>
+    <button class="tab" data-tab="local">本地采集</button>
+    <button class="tab" data-tab="adv">高级</button>
+    <button class="tab" data-tab="log">日志</button>
+  </nav>
+</header>
+
+<main>
+  <div id="banner" class="banner hidden"></div>
+
+  <section id="tab-overview" class="panel active">
+    <div class="card">
+      <h2>状态</h2>
+      <dl class="kv" id="status"></dl>
+    </div>
+    <div class="card">
+      <h2>预设</h2>
+      <p class="muted">只修改配置，不会立即执行。选完可以去「分类」页微调，再点下方「保存并应用」。</p>
+      <div class="row wrap">
+        <button class="btn" data-preset="conservative">保守<small>断网 + 禁用广告/遥测</small></button>
+        <button class="btn" data-preset="recommended">推荐<small>+ 限制后台，云控/安全云断网</small></button>
+        <button class="btn" data-preset="aggressive">激进<small>卸载广告，处理云服务，含中风险</small></button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>说明</h2>
+      <ul class="muted list">
+        <li>每一项改动都会记录原值，「全部还原」或卸载模块会逐项恢复。</li>
+        <li>网络拦截 = hosts 域名 + 按 UID 的 iptables（filter 表自有链 <code>ANXIMI_OUT</code>），不使用 mangle/nat/路由标记，与 Surfing 共存。</li>
+        <li>system UID (1000) 的核心组件不会被 iptables 拦截（否则整机断网），只靠 hosts；建议在 mihomo 里引用导出的规则集补全。</li>
+        <li>所有选中用户（含第二空间、Island 工作资料、双开空间）都会处理。</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="tab-cats" class="panel">
+    <div class="row between">
+      <label class="field inline">风险上限
+        <select id="risk_level">
+          <option value="low">低（默认）</option>
+          <option value="med">中</option>
+          <option value="high">高</option>
+        </select>
+      </label>
+      <label class="check"><input type="checkbox" id="onlyInstalled" checked> 只显示已安装</label>
+    </div>
+    <div id="cats"></div>
+  </section>
+
+  <section id="tab-local" class="panel">
+    <div class="card">
+      <h2>系统设置项</h2>
+      <p class="muted">应用时记录原值，还原时写回。标注「待验证」的是 MIUI 键名，在 HyperOS 3 上可能已无作用（写入无害）。</p>
+      <div id="settings"></div>
+    </div>
+    <div class="card">
+      <h2>组件禁用</h2>
+      <p class="muted">对某个包（比如必须保留的安全中心）只禁用其中的上传/统计组件。只能扫描到在 dumpsys 中出现的组件。</p>
+      <div class="row">
+        <input id="compPkg" placeholder="包名，如 com.miui.securitycenter" list="pkgList">
+        <datalist id="pkgList"></datalist>
+        <button class="btn small" id="compScan">扫描</button>
+      </div>
+      <label class="check"><input type="checkbox" id="compFilter" checked> 只显示疑似采集组件（含 stat/track/report/upload/analytic/ad/cloud…）</label>
+      <div id="compList" class="complist"></div>
+      <details>
+        <summary>直接编辑 components.conf</summary>
+        <textarea id="f_components" rows="8" spellcheck="false"></textarea>
+      </details>
+    </div>
+  </section>
+
+  <section id="tab-adv" class="panel">
+    <div class="card">
+      <h2>作用用户</h2>
+      <div id="users" class="row wrap"></div>
+    </div>
+    <div class="card">
+      <h2>网络</h2>
+      <label class="field">拦截后端
+        <select id="net_backend">
+          <option value="iptables">iptables（默认，filter 表自有链）</option>
+          <option value="bpf">bpf chain3（实验，仅用户 0；其余用户回落 iptables）</option>
+          <option value="none">none（只用 hosts）</option>
+        </select>
+      </label>
+      <label class="field">拦截动作
+        <select id="net_target">
+          <option value="REJECT">REJECT（立即失败，推荐）</option>
+          <option value="DROP">DROP（静默丢弃）</option>
+        </select>
+      </label>
+      <label class="check"><input type="checkbox" id="hosts"> 启用模块 hosts（与其他 hosts 模块冲突时关闭，重启生效）</label>
+      <label class="check"><input type="checkbox" id="net_watchdog"> iptables 看门狗（每 5 分钟检查跳转是否被冲掉）</label>
+      <label class="field">mihomo 规则集额外复制到
+        <input id="mihomo_export_dir" placeholder="例如 Surfing 的 clash 目录，留空不复制">
+      </label>
+      <div class="row wrap">
+        <button class="btn small" id="exportMihomo">立即导出 mihomo 规则集</button>
+      </div>
+      <p class="muted">规则集始终写在 <code>/data/adb/anximi/export/</code>：<code>anximi-domains.yaml</code>（domain）与 <code>anximi-process.yaml</code>（classical，PROCESS-NAME）。</p>
+    </div>
+    <div class="card">
+      <h2>其他</h2>
+      <label class="field">区域
+        <select id="region">
+          <option value="auto">自动识别</option>
+          <option value="global">国际版</option>
+          <option value="eea">欧版 EEA</option>
+          <option value="cn">国行</option>
+        </select>
+      </label>
+      <label class="check"><input type="checkbox" id="boot_apply"> 开机自动应用（补上新用户与系统更新后恢复的组件）</label>
+      <label class="check"><input type="checkbox" id="components"> 启用组件禁用列表</label>
+    </div>
+    <div class="card">
+      <h2>自定义</h2>
+      <label class="field">自定义包 <span class="muted">分类|包名|允许手段|风险|说明</span>
+        <textarea id="f_custom_list" rows="5" spellcheck="false"></textarea></label>
+      <label class="field">自定义拦截域名 <span class="muted">一行一个，"+." 开头为通配</span>
+        <textarea id="f_custom_hosts" rows="5" spellcheck="false"></textarea></label>
+      <label class="field">放行域名
+        <textarea id="f_allow_hosts" rows="3" spellcheck="false"></textarea></label>
+      <div class="row wrap">
+        <button class="btn small" id="discover">发现清单外的小米组件</button>
+      </div>
+      <pre id="discoverOut" class="out hidden"></pre>
+    </div>
+  </section>
+
+  <section id="tab-log" class="panel">
+    <div class="row"><button class="btn small" id="logRefresh">刷新</button></div>
+    <pre id="log" class="out"></pre>
+  </section>
+</main>
+
+<footer class="actions">
+  <button class="btn ghost" id="btnRevert">全部还原</button>
+  <button class="btn" id="btnSave">保存</button>
+  <button class="btn primary" id="btnApply">保存并应用</button>
+</footer>
+
+<div id="overlay" class="overlay hidden">
+  <div class="sheet">
+    <h2 id="ovTitle">正在执行</h2>
+    <p id="ovLine" class="mono"></p>
+    <pre id="ovLog" class="out small"></pre>
+    <button class="btn" id="ovClose" disabled>关闭</button>
+  </div>
+</div>
+<div id="toast" class="toast hidden"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

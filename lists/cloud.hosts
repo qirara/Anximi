@@ -1,0 +1,6 @@
+# 小米账号与云服务域名（会导致无法登录小米账号，默认不启用）
+account.xiaomi.com
+i.mi.com
++.micloud.xiaomi.net
++.micloud.mi.com
+find.api.micloud.xiaomi.net

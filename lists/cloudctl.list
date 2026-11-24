@@ -1,0 +1,7 @@
+# 包名|允许的手段|区域|风险|说明
+com.xiaomi.joyose|net,disable,restrict|all|med|Joyose 云控（下发性能/温控/游戏策略；禁用可能影响游戏加速与温控曲线）
+com.miui.powerkeeper|net|all|low|电量与性能（核心，只允许断网；system UID，靠 hosts）
+com.lbe.security.miui|net|all|low|权限管理器（核心，只允许断网，阻止云端权限策略下发）
+com.xiaomi.discover|net,disable|global|med|系统应用更新（Discover，后台拉取更新与配置）
+com.miui.thirdappassistant|net,disable|all|low|第三方应用助手（云端兼容策略）
+com.miui.core|net|all|low|MIUI SDK（核心，只允许断网）

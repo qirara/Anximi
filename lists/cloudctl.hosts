@@ -1,0 +1,4 @@
+# 云控域名（种子列表，见 ads.hosts 说明）。
+# 不包含 OTA 更新 (update.miui.com / update.intl.miui.com)，避免误伤系统更新。
+api.comm.miui.com
+api.comm.intl.miui.com

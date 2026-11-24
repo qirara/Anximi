@@ -1,0 +1,6 @@
+id=anximi
+name=Anximi 隐私模块
+version=v0.1.0
+versionCode=100
+author=qirara
+description=按分类、可逆地切断 HyperOS/MIUI 的广告、遥测、云控、安全云检测、AI 上传链路，并停掉本地采集。支持 KernelSU/APatch/Magisk，WebUI 配置，覆盖所有用户。

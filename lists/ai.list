@@ -1,0 +1,11 @@
+# 包名|允许的手段|区域|风险|说明
+com.miui.contentextension|net,disable,uninstall,restrict|all|low|传送门 / Taplus（识别并上传屏幕内容）
+com.miui.contentcatcher|disable,restrict|all|med|内容捕获服务（为 Taplus 等抓取应用内容；本地采集）
+com.xiaomi.aiasst.service|net,disable,uninstall,restrict|all|low|AI 通话助理
+com.xiaomi.aiasst.vision|net,disable,uninstall,restrict|all|low|AI 字幕 / 视觉识别
+com.xiaomi.aicr|net,disable,restrict|all|med|小米 AI 引擎（HyperAI 写作/识图等）
+com.xiaomi.aireco|net,disable,uninstall,restrict|all|low|智能建议 / 场景推荐
+com.miui.voiceassist|net,disable,uninstall,restrict|cn|low|小爱同学（国行）
+com.miui.voicetrigger|net,disable,uninstall,restrict|all|low|语音唤醒（常驻监听麦克风）
+com.xiaomi.mibrain.speech|net,disable,restrict|all|med|语音引擎（系统 TTS/识别可能依赖）
+com.xiaomi.scanner|net,disable,uninstall|all|med|扫一扫（云端识别；本地扫码也会失效）

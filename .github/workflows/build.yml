@@ -1,0 +1,27 @@
+name: build
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install shells
+        run: sudo apt-get update && sudo apt-get install -y busybox mksh shellcheck
+      - name: Lint
+        run: shellcheck -s sh -S warning anximi.sh customize.sh post-fs-data.sh service.sh action.sh uninstall.sh build.sh tests/run.sh
+      - name: Test (dash / busybox ash / mksh)
+        run: |
+          sh tests/run.sh dash
+          sh tests/run.sh "busybox sh"
+          sh tests/run.sh mksh
+      - name: Check WebUI syntax
+        run: node --check webroot/app.js
+      - name: Package
+        run: sh build.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Anximi
+          path: out/*.zip
