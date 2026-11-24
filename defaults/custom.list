@@ -1,0 +1,2 @@
+# 自定义包（会并入对应分类），格式：分类|包名|允许的手段|风险|说明
+# 例：telemetry|com.example.tracker|net,disable,restrict|low|某追踪组件

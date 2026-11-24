@@ -1,0 +1,10 @@
+# id|命名空间|键|设定值|风险|说明
+# 应用前记录原值，还原时写回原值（原值为 null 时删除该键）。
+wifi_scan|global|wifi_scan_always_enabled|0|low|关闭“WLAN 扫描”（WLAN 关闭时仍扫描周边热点用于定位）
+ble_scan|global|ble_scan_always_enabled|0|low|关闭“蓝牙扫描”（蓝牙关闭时仍扫描周边设备用于定位）
+ux_program|secure|upload_log_pref|0|low|关闭用户体验计划日志上传（MIUI 键，HyperOS 3 上待验证）
+ux_debuglog|secure|upload_debug_log_pref|0|low|关闭自动发送诊断数据（MIUI 键，HyperOS 3 上待验证）
+agps|global|assisted_gps_enabled|0|med|关闭 A-GPS 辅助定位（向 SUPL 服务器发送基站信息；首次定位变慢）
+captive_http|global|captive_portal_http_url|http://connectivitycheck.gstatic.com/generate_204|low|联网检测改用 Google（国行默认 connect.rom.miui.com）
+captive_https|global|captive_portal_https_url|https://www.google.com/generate_204|low|联网检测 HTTPS 地址改用 Google
+ntp|global|ntp_server|time.android.com|low|NTP 时间服务器改用 time.android.com

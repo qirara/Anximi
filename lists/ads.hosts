@@ -1,0 +1,18 @@
+# 广告域名。以 "+." 开头表示通配：hosts 中只写入主域本身，mihomo 规则集中写成通配。
+# 种子列表：整理自公开的 MIUI 去广告规则，未在 HyperOS 3 上逐一抓包验证；请在 WebUI 里补充。
+ad.xiaomi.com
+ad1.xiaomi.com
+api.ad.xiaomi.com
+e.ad.xiaomi.com
+new.api.ad.xiaomi.com
+globalapi.ad.xiaomi.com
+sdkconfig.ad.xiaomi.com
+test.ad.xiaomi.com
+ad.intl.xiaomi.com
+api.ad.intl.xiaomi.com
+sdkconfig.ad.intl.xiaomi.com
+ad.mi.com
+adv.sec.miui.com
+adv.sec.intl.miui.com
++.ad.xiaomi.com
++.ad.intl.xiaomi.com

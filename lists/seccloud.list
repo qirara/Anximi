@@ -1,0 +1,7 @@
+# 包名|允许的手段|区域|风险|说明
+com.miui.securitycenter|net|all|low|安全中心（核心，只允许断网；system UID 时靠 hosts）
+com.miui.guardprovider|net,disable,restrict|all|med|安全扫描引擎（病毒云查/特征库更新；禁用后安全中心扫描不可用）
+com.miui.securityadd|net,disable|all|med|安全中心附加组件
+com.miui.global.packageinstaller|net|global|low|应用安装器（安装时云扫描；只允许断网，否则无法安装应用）
+com.miui.packageinstaller|net|cn|low|应用安装器（国行，安装时云扫描）
+com.miui.securityinputmethod|net|cn|low|安全键盘（国行，只允许断网）

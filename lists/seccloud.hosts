@@ -1,0 +1,11 @@
+# 安全云检测域名（种子列表，见 ads.hosts 说明）
+api.sec.miui.com
+api.sec.intl.miui.com
+srv.sec.miui.com
+srv.sec.intl.miui.com
+port.sec.miui.com
+flash.sec.miui.com
+update.avlyun.sec.miui.com
+api.installer.xiaomi.com
++.sec.miui.com
++.sec.intl.miui.com

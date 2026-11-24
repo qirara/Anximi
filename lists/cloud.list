@@ -1,0 +1,11 @@
+# 包名|允许的手段|区域|风险|说明
+com.miui.cloudbackup|net,disable,uninstall,restrict|all|low|云备份
+com.miui.micloudsync|net,disable,uninstall,restrict|all|low|云同步
+com.miui.cloudservice|net,disable,restrict|all|med|小米云服务
+com.miui.cloudservice.sysbase|net,disable|all|med|小米云服务基础组件
+com.xiaomi.micloud.sdk|net,disable|all|med|小米云 SDK
+com.xiaomi.xmsf|net,disable,restrict|all|med|小米服务框架（推送；部分国内应用推送依赖）
+com.xiaomi.payment|net,disable,uninstall|cn|low|小米支付（国行）
+com.mipay.wallet|net,disable,uninstall|cn|low|小米钱包（国行）
+com.xiaomi.finddevice|net,disable|all|high|查找设备（与账号防盗锁绑定；登录过小米账号时谨慎）
+com.xiaomi.account|net,disable|all|high|小米账号（禁用后无法登录小米账号）
