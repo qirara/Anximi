@@ -28,6 +28,9 @@ RUN="$DATA/run"
 LOG="$DATA/logs/anximi.log"
 APPLIED="$STATE/applied.list"
 CHAIN=ANXIMI_OUT
+# Surfing 会把这个文件 bind mount 到 /system/etc/hosts（盖住本模块的 hosts），有它时把拦截条目同步进去
+SURF_HOSTS=${ANX_SURF_HOSTS:-/data/adb/box_bll/clash/etc/hosts}
+SURF_RULES=${ANX_SURF_RULES:-/data/adb/box_bll/clash/rules}
 CATS="ads telemetry cloudctl seccloud ai cloud"
 
 # 永远只允许网络拦截的核心包（就算用户强制也不禁用/卸载）
@@ -428,10 +431,27 @@ blocked_domains() {
   else cat "$RUN/domains.tmp"; fi
 }
 
+# 把 $1 里的 0.0.0.0 / :: 条目写进 Surfing 的 hosts（# >>> Anximi … # <<< Anximi 之间）；$1 为空则只删除该段
+surf_hosts_sync() {
+  [ -f "$SURF_HOSTS" ] || return 0
+  awk '/^# >>> Anximi/ { s = 1; next } /^# <<< Anximi/ { s = 0; next } !s' "$SURF_HOSTS" > "$RUN/surf.hosts"
+  if [ -n "$1" ] && grep -q '^0\.0\.0\.0 ' "$1" 2>/dev/null; then
+    {
+      echo "# >>> Anximi (自动生成，请勿手改；关闭 Anximi 的 hosts 或还原后会自动移除)"
+      grep -E '^(0\.0\.0\.0|::) ' "$1"
+      echo "# <<< Anximi"
+    } >> "$RUN/surf.hosts"
+  fi
+  # 原地写入保持 inode：Surfing 已 bind mount 的情况下立即生效，它的 inotify 也会重新挂载
+  cmp -s "$RUN/surf.hosts" "$SURF_HOSTS" || { cat "$RUN/surf.hosts" > "$SURF_HOSTS"; log "hosts：已同步到 Surfing 的 $SURF_HOSTS"; }
+  return 0
+}
+
 hosts_build() {
   _hf="$MODDIR/system/etc/hosts"
   if [ "$(cfg hosts 1)" != 1 ]; then
     [ -f "$_hf" ] && { rm -f "$_hf"; log "hosts 已关闭：下次重启后不再挂载模块的 hosts"; }
+    surf_hosts_sync ""
     return 0
   fi
   _new=0; [ -f "$_hf" ] || _new=1
@@ -450,9 +470,20 @@ hosts_build() {
   cat "$RUN/hosts.new" > "$_hf"
   chmod 644 "$_hf"
   cp -f "$RUN/hosts.new" "$DATA/export/hosts.txt"
+  surf_hosts_sync "$RUN/hosts.new"
   log "hosts：$(wc -l < "$RUN/hosts.domains") 个域名"
   [ $_new = 1 ] && log "hosts 文件首次生成，需要重启后挂载生效"
   return 0
+}
+
+# 规则集额外复制的目录：配置为空时自动用 Surfing 的 rules 目录（存在时）；填 - 表示不复制
+mihomo_dir() {
+  _md=$(cfg mihomo_export_dir "")
+  case "$_md" in
+    -) ;;
+    "") [ -d "$SURF_RULES" ] && echo "$SURF_RULES" ;;
+    *) echo "$_md" ;;
+  esac
 }
 
 export_mihomo() {
@@ -469,7 +500,7 @@ export_mihomo() {
     if [ -s "$RUN/net.want" ]; then cut -d'|' -f2 "$RUN/net.want" | sort -u | sed 's/.*/  - PROCESS-NAME,&/'
     else echo "  - PROCESS-NAME,anximi.placeholder"; fi
   } > "$_e/anximi-process.yaml"
-  _d=$(cfg mihomo_export_dir "")
+  _d=$(mihomo_dir)
   if [ -n "$_d" ] && [ -d "$_d" ]; then
     cp -f "$_e/anximi-domains.yaml" "$_e/anximi-process.yaml" "$_d/" && log "mihomo 规则集已复制到 $_d"
   fi
@@ -546,6 +577,7 @@ cmd_revert() {
   net_teardown_ipt; net_teardown_bpf
   : > "$STATE/net.uids"
   _hf="$MODDIR/system/etc/hosts"
+  surf_hosts_sync ""
   if [ -f "$_hf" ]; then
     printf '127.0.0.1 localhost\n::1 ip6-localhost\n' > "$_hf"
     log "hosts 已清空（模块仍挂载一个默认 hosts；如需完全移除请把 hosts=0 并重启）"
@@ -553,7 +585,7 @@ cmd_revert() {
   : > "$RUN/net.want"; echo none > "$RUN/hosts.cats"
   printf "payload:\n  - 'anximi.invalid'\n" > "$DATA/export/anximi-domains.yaml"
   printf 'payload:\n  - PROCESS-NAME,anximi.placeholder\n' > "$DATA/export/anximi-process.yaml"
-  _d=$(cfg mihomo_export_dir "")
+  _d=$(mihomo_dir)
   [ -n "$_d" ] && [ -d "$_d" ] && cp -f "$DATA/export/anximi-domains.yaml" "$DATA/export/anximi-process.yaml" "$_d/"
   rm -f "$STATE/last_apply"
   progress "完成：所有改动已还原"
@@ -587,6 +619,8 @@ cmd_status() {
   echo "last_apply=$(cat "$STATE/last_apply" 2>/dev/null)"
   echo "rescue=$( [ -f "$DATA/rescued" ] && cat "$DATA/rescued")"
   echo "surfing=$( [ -d /data/adb/modules/Surfing ] && echo 1 || echo 0)"
+  echo "surfing_hosts=$( [ -f "$SURF_HOSTS" ] && grep -c '^0\.0\.0\.0' "$SURF_HOSTS" || echo -)"
+  echo "mihomo_dir=$(mihomo_dir)"
   echo "running=$( [ -d "$RUN/lock" ] && echo 1 || echo 0)"
 }
 
