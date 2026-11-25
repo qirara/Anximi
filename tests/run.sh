@@ -6,7 +6,10 @@ SH=${1:-dash}
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 T=$(mktemp -d)
 trap 'rm -rf "$T"' EXIT
-mkdir -p "$T/mod" "$T/data" "$T/mock"
+mkdir -p "$T/mod" "$T/data" "$T/mock" "$T/surf/etc" "$T/surf/rules"
+# 模拟已装 Surfing：它自己的 hosts（会被 bind mount 到 /system/etc/hosts）和 rules 目录
+printf '# Default\n127.0.0.1       localhost\n::1             ip6-localhost\n' > "$T/surf/etc/hosts"
+cp "$T/surf/etc/hosts" "$T/surf.hosts.orig"
 cp -r "$ROOT/anximi.sh" "$ROOT/module.prop" "$ROOT/lists" "$ROOT/defaults" "$T/mod/"
 mkdir -p "$T/mod/system/etc"; printf '127.0.0.1 localhost\n' > "$T/mod/system/etc/hosts"
 cat > "$T/mock/state.json" <<'J'
@@ -29,6 +32,7 @@ cat > "$T/mock/state.json" <<'J'
 }
 J
 export MOCK="$T/mock" ANX_DATA="$T/data" ANX_MODDIR="$T/mod" ANX_REEXEC=1 QUIET=1
+export ANX_SURF_HOSTS="$T/surf/etc/hosts" ANX_SURF_RULES="$T/surf/rules"
 export PATH="$ROOT/tests/mock-bin:$PATH"
 cp "$T/mock/state.json" "$T/before.json"
 A="$SH $T/mod/anximi.sh"
@@ -58,6 +62,10 @@ echo "$rules" | grep -q 'uid-owner 10106' || fail "安装器未断网"
 grep -q '^0.0.0.0 data.mistat.xiaomi.com' "$T/mod/system/etc/hosts" || fail "hosts 缺遥测域名"
 grep -q "'+.sec.miui.com'" "$T/data/export/anximi-domains.yaml" || fail "mihomo 导出缺通配"
 grep -q 'PROCESS-NAME,com.miui.analytics' "$T/data/export/anximi-process.yaml" || fail "mihomo 进程规则缺失"
+grep -q '^0.0.0.0 data.mistat.xiaomi.com' "$T/surf/etc/hosts" || fail "未同步到 Surfing 的 hosts"
+grep -q '^127.0.0.1       localhost' "$T/surf/etc/hosts" || fail "Surfing hosts 原有内容丢失"
+[ "$(grep -c '^# >>> Anximi' "$T/surf/etc/hosts")" = 1 ] || fail "Surfing hosts 区块数不对"
+cmp -s "$T/data/export/anximi-domains.yaml" "$T/surf/rules/anximi-domains.yaml" || fail "规则集未自动复制到 Surfing rules"
 n1=$(wc -l < "$T/data/state/applied.list")
 echo "   已接管 $n1 项"
 
@@ -66,6 +74,7 @@ echo "== apply again (idempotent)"
 $A apply
 n2=$(wc -l < "$T/data/state/applied.list")
 [ "$n1" = "$n2" ] || fail "二次 apply 状态条目变化 $n1 -> $n2"
+[ "$(grep -c '^# >>> Anximi' "$T/surf/etc/hosts")" = 1 ] || fail "二次 apply 后 Surfing hosts 区块重复"
 grep -qE '^pm (disable-user|uninstall)' "$T/mock/calls.log" && fail "二次 apply 重复执行了禁用"
 
 echo "== change config: ads -> uninstall, telemetry off"
@@ -88,6 +97,11 @@ $A components com.miui.securitycenter | grep -q 'com.miui.securitycenter/com.miu
 $A apply
 [ "$(q "s['comps']['0']['com.miui.securitycenter/com.x.Tracker']")" = True ] || fail "组件未禁用"
 
+echo "== hosts=0 removes Surfing block"
+sed -i 's/^hosts=.*/hosts=0/' "$T/data/config.conf"; $A hosts-build
+grep -q '^# >>> Anximi' "$T/surf/etc/hosts" && fail "hosts=0 后 Surfing hosts 仍有 Anximi 区块"
+sed -i 's/^hosts=.*/hosts=1/' "$T/data/config.conf"; $A hosts-build
+grep -q '^0.0.0.0 ' "$T/surf/etc/hosts" || fail "hosts=1 后未重新同步"
 echo "== inventory"; $A inventory | head -3
 echo "== revert"; $A revert
 python3 - "$T/before.json" "$T/mock/state.json" <<'P'
@@ -109,6 +123,8 @@ if bad:
 P
 [ -s "$T/data/state/applied.list" ] && fail "状态文件未清空"
 grep -q '^0.0.0.0' "$T/mod/system/etc/hosts" && fail "hosts 未清空"
+cmp -s "$T/surf/etc/hosts" "$T/surf.hosts.orig" || fail "还原后 Surfing hosts 未恢复原样"
+grep -q 'anximi.invalid' "$T/surf/rules/anximi-domains.yaml" || fail "还原后 Surfing rules 未换成占位"
 echo "== hosts-build after revert stays empty"
 $A hosts-build; grep -q '^0.0.0.0' "$T/mod/system/etc/hosts" && fail "还原后 hosts-build 又写入了域名"
 echo "ALL PASS ($SH)"
